@@ -1,0 +1,33 @@
+Package: soGGi
+Type: Package
+Title: Visualise ChIP-seq, MNase-seq and motif occurrence as aggregate
+        plots Summarised Over Grouped Genomic Intervals
+Version: 1.10.4
+Date: 2015-12-02
+Author: Gopuraja Dharmalingam, Tom Carroll
+Maintainer: Tom Carroll <tc.infomatics@gmail.com>
+Description: The soGGi package provides a toolset to create genomic
+        interval aggregate/summary plots of signal or motif occurence
+        from BAM and bigWig files as well as PWM, rlelist, GRanges and
+        GAlignments Bioconductor objects. soGGi allows for
+        normalisation, transformation and arithmetic operation on and
+        between summary plot objects as well as grouping and subsetting
+        of plots by GRanges objects and user supplied metadata. Plots
+        are created using the GGplot2 libary to allow user defined
+        manipulation of the returned plot object. Coupled together,
+        soGGi features a broad set of methods to visualise genomics
+        data in the context of groups of genomic intervals such as
+        genes, superenhancers and transcription factor binding events.
+biocViews: Sequencing, ChIPSeq, Coverage
+License: GPL (>= 3)
+LazyLoad: yes
+Depends: R (>= 3.2.0), BiocGenerics, SummarizedExperiment
+Imports: methods, reshape2, ggplot2, S4Vectors, IRanges, GenomeInfoDb,
+        GenomicRanges, Biostrings, Rsamtools, GenomicAlignments,
+        rtracklayer, preprocessCore, chipseq, BiocParallel
+Collate: 'allClasses.r' 'motifTools.R' 'peakTransforms.r' 'plots.R'
+        'soggi.R'
+VignetteBuilder: knitr
+Suggests: testthat, BiocStyle, knitr
+NeedsCompilation: no
+Packaged: 2017-10-31 00:22:48 UTC; biocbuild

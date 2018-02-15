@@ -1,0 +1,6 @@
+library(soGGi)
+context("Test plot returns a gg object")
+data(chipExampleBig)
+p <- plotRegion(chipExampleBig)
+expect_that(all(class(p) == c("gg","ggplot")),is_true()
+            )
