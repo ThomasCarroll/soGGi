@@ -319,8 +319,8 @@ subsetProfile <- function(profile,group,granges,summariseColumn){
 
 #' @export
 plotHeatmap <- function(profile,bins=100,col=heat.colors(100),
-                        rowScale=TRUE,orderPosition=NULL,orderBy="maxAtPosition",
-                        breaks=NULL,...){
+                        rowScale=FALSE,logScale=TRUE,orderPosition=NULL,orderBy="maxAtPosition",
+                        breaks=NULL,maxValue=NULL,...){
   # profile=csc41
   # bins=100
   # col=heat.colors(100)
@@ -368,6 +368,10 @@ plotHeatmap <- function(profile,bins=100,col=heat.colors(100),
       matt <- matt[order(rowMeans(matt[,min(orderPosition):max(orderPosition)]),decreasing=TRUE),]
     } 
   }
+  if(logScale){
+    matt[matt == 0] <- min(matt[matt !=0])
+    matt <- log2(matt)
+  }
   if(rowScale==TRUE){
     matt <- t(scale(t(matt),center=TRUE,scale=TRUE))
   }
@@ -378,8 +382,14 @@ plotHeatmap <- function(profile,bins=100,col=heat.colors(100),
          widths=c(4,1), heights=c(1,1))
   matttoPlot <- matt[rev(1:nrow(matt)),]
   if(is.null(breaks)){
+    if(!is.null(maxValue)){
+      breaks <- seq(min(matt),maxValue,length.out = length(col)+1)
+      image(t(matttoPlot),useRaster=TRUE,
+            xaxt='n',yaxt="n",col=col,breaks=breaks,...) 
+    }else{
     image(t(matttoPlot),useRaster=TRUE,
           xaxt='n',yaxt="n",col=col,...)
+    }
   }else{
     image(t(matttoPlot),useRaster=TRUE,
           xaxt='n',yaxt="n",col=col,breaks=breaks,...) 
@@ -389,7 +399,7 @@ plotHeatmap <- function(profile,bins=100,col=heat.colors(100),
         matrix(data=seq(min(matt,na.rm = T),max(matt,na.rm=T),
                         length=length(col)),ncol=length(col),
                nrow=1),
-        xlab="",ylab="",xaxt="n",las=2,col=col)
+        xlab="",ylab="",xaxt="n",yaxt="n",las=2,col=col)
   return(matt)
 }
 
