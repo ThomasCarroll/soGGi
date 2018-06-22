@@ -319,7 +319,8 @@ subsetProfile <- function(profile,group,granges,summariseColumn){
 
 #' @export
 plotHeatmap <- function(profile,bins=100,col=heat.colors(100),
-                        rowScale=TRUE,orderPosition=NULL,orderBy="maxAtPosition",...){
+                        rowScale=TRUE,orderPosition=NULL,orderBy="maxAtPosition",
+                        breaks=NULL,...){
   # profile=csc41
   # bins=100
   # col=heat.colors(100)
@@ -365,18 +366,24 @@ plotHeatmap <- function(profile,bins=100,col=heat.colors(100),
       matt <- matt[order(matt[,orderPosition],decreasing=TRUE),]
     }else{
       matt <- matt[order(rowMeans(matt[,min(orderPosition):max(orderPosition)]),decreasing=TRUE),]
-    }   
+    } 
+  }
   if(rowScale==TRUE){
     matt <- t(scale(t(matt),center=TRUE,scale=TRUE))
   }
 
     
-  }
+
   layout(matrix(data=c(1,2), nrow=1, ncol=2),
          widths=c(4,1), heights=c(1,1))
-  image(t(matt),useRaster=TRUE,
-        xaxt='n',yaxt="n",col=col)
-  
+  matttoPlot <- matt[rev(1:nrow(matt)),]
+  if(is.null(breaks)){
+    image(t(matttoPlot),useRaster=TRUE,
+          xaxt='n',yaxt="n",col=col,...)
+  }else{
+    image(t(matttoPlot),useRaster=TRUE,
+          xaxt='n',yaxt="n",col=col,breaks=breaks,...) 
+  }
   par(mar = c(3,2.5,2.5,2))
   image(1, 1:length(col),
         matrix(data=seq(min(matt,na.rm = T),max(matt,na.rm=T),
