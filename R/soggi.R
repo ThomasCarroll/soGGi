@@ -382,7 +382,7 @@ runRegionPlot <- function(bamFile,testRanges,samplename=NULL,nOfWindows=100,Frag
   
   
   chromosomes <- seqlevels(genomeCov) 
-  
+  chromosomes <- chromosomes[chromosomes %in% unique(seqnames(reducedExtTestRanges))]
   
   # If style is "point" creates matrix of  per base pair coverage around centre of GRanges
   
@@ -410,6 +410,8 @@ runRegionPlot <- function(bamFile,testRanges,samplename=NULL,nOfWindows=100,Frag
     message("Creating ChIPprofile.")
     
     ## Create matrix as summarisedexperiment with column and row names to be exported as part of ChIPprofile object
+    require(DelayedMatrixStats)
+    # profileMat <- realize(RegionsMat,"HDF5Array")
     profileMat <- RegionsMat
     colnames(profileMat) <- c(paste0("Point_Centre",seq(0-distanceUpStart,-1)),"Point_Centre",paste0("Point_Centre",seq(1,distanceDownEnd)))
     filteredRanges <- c(RangesPos,RangesNeg)
