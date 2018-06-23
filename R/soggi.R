@@ -44,7 +44,7 @@ runRegionPlot <- function(bamFile,testRanges,samplename=NULL,nOfWindows=100,Frag
   # format="bam"
   # seqlengths=NULL
   if(format == "bam"){
-    if(file.exists(bamFile) & length(index(BamFile(bamFile))) == 0){
+    if(file.exists(bamFile) & is.na(index(BamFile(bamFile)))){
       message("Creating index for ",bamFile)
       indexBam(bamFile)
       message("..done")
@@ -136,15 +136,31 @@ runRegionPlot <- function(bamFile,testRanges,samplename=NULL,nOfWindows=100,Frag
   
   # Import bigwig.
   
+  # if(format=="bigwig"){
+  #   message("Importing BigWig...",appendLF = FALSE)
+  #   genomeCov <- import.bw(bamFile,as = "RleList")
+  #   if(is.null(seqlengths)){
+  #     seqlengths(genomeCov) <- unlist(lapply(genomeCov,length))
+  #   }else{
+  #     seqlengths(genomeCov)[match(names(lengths),names(genomeCov))] <- lengths
+  #   }
+  #   lengths <- seqlengths(genomeCov)
+  #   allchrs <- names(lengths)
+  #   message("..Done")
+  # }
+
+  # bamFile <- "~/Downloads/ENCFF259VHD.bigWig"
+  
   if(format=="bigwig"){
-    message("Importing BigWig...",appendLF = FALSE)
-    genomeCov <- import.bw(bamFile,as = "RleList")
-    if(is.null(seqlengths)){
-      seqlengths(genomeCov) <- unlist(lapply(genomeCov,length))
-    }else{
-      seqlengths(genomeCov)[match(names(lengths),names(genomeCov))] <- lengths
-    }
-    lengths <- seqlengths(genomeCov)
+    message("Reading BigWig contig information...",appendLF = FALSE)
+    bwFF <- BigWigFile(bamFile)
+    # if(is.null(seqlengths)){
+    #   seqlengths(genomeCov) <- unlist(lapply(genomeCov,length))
+    # }else{
+    #   seqlengths(genomeCov)[match(names(lengths),names(genomeCov))] <- lengths
+    # }
+
+    lengths <- seqlengths(bwFF)
     allchrs <- names(lengths)
     message("..Done")
   }
@@ -358,6 +374,13 @@ runRegionPlot <- function(bamFile,testRanges,samplename=NULL,nOfWindows=100,Frag
     allchrs <- names(lengths)
     message("..done")
   }
+  
+  if(format=="bigwig"){
+    bwSelect <- BigWigSelection(GRanges(seqnames=seqnames(reducedExtTestRanges[seqnames(reducedExtTestRanges) %in% allchrs]),IRanges(start=start(reducedExtTestRanges[seqnames(reducedExtTestRanges) %in% allchrs]),end=end(reducedExtTestRanges[seqnames(reducedExtTestRanges) %in% allchrs]))))
+    genomeCov <- import.bw(bamFile,selection=bwSelect,as="RleList")
+  }
+  
+  
   chromosomes <- seqlevels(genomeCov) 
   
   
