@@ -415,6 +415,7 @@ runRegionPlot <- function(bamFile,testRanges,samplename=NULL,nOfWindows=100,Frag
     profileMat <- RegionsMat
     colnames(profileMat) <- c(paste0("Point_Centre",seq(0-distanceUpStart,-1)),"Point_Centre",paste0("Point_Centre",seq(1,distanceDownEnd)))
     filteredRanges <- c(RangesPos,RangesNeg)
+    names(filteredRanges) <- c(as.character(RangesPos$giID), as.character(RangesNeg$giID))
     profileSample <- SummarizedExperiment(profileMat,rowRanges=filteredRanges[match(rownames(profileMat),filteredRanges$giID)])
 
     ## Set sample name for ChIPprofile object
