@@ -1,7 +1,7 @@
 #' Plot coverage of points or regions.
-#' 
+#'
 #' @rdname findconsensusRegions
-#' @param testRanges Named character vector of region locations 
+#' @param testRanges Named character vector of region locations
 #' @param bamFiles Named character vector of bamFile locations
 #' @param method Method to select reproducible summits to merge.
 #' @param summit Only mean avaialble
@@ -9,7 +9,7 @@
 #' @param overlap Type of overlap to consider for finding consensus sites
 #' @param fragmentLength Predicted fragment length. Set to NULL to auto-calculate
 #' @param NonPrimaryPeaks A list of parameters to deal with non primary peaks in consensus regions.
-#' @return Consensus A GRanges object of consensus regions with consensus summits. 
+#' @return Consensus A GRanges object of consensus regions with consensus summits.
 #' @export
 findconsensusRegions <- function(testRanges,bamFiles=NULL,method="majority",summit="mean",resizepeak="asw",overlap="any",fragmentLength=NULL,
                                  NonPrimaryPeaks=list(withinsample="drop",betweensample="mean")){
@@ -19,7 +19,7 @@ findconsensusRegions <- function(testRanges,bamFiles=NULL,method="majority",summ
       testRanges,
       GetGRanges)
     )
-  
+
   ans <- lapply(
     names(bamFiles),
     function(x) summitPipeline(
@@ -42,7 +42,7 @@ findconsensusRegions <- function(testRanges,bamFiles=NULL,method="majority",summ
     ))
     ansSummitScores <- do.call(cbind,bplapply(ans,function(x)
       extractScores(x,consensusRanges)
-    )) 
+    ))
     if(unlist(NonPrimaryPeaks["betweensample"])=="mean"){
       meanSummits <- rowMeans(ansSummits,na.rm=TRUE)
     }
@@ -50,9 +50,9 @@ findconsensusRegions <- function(testRanges,bamFiles=NULL,method="majority",summ
       #meanSummits <- rowMeans(ansSummits,na.omit=TRUE)
       meanSummits <- round(sapply(seq(1,nrow(ansSummits)),function(x)weighted.mean(ansSummits[x,],ansSummitScores[x,])))
     }
-  }  
+  }
   start(consensusRanges) <- end(consensusRanges) <- meanSummits
-  return(consensusRanges)  
+  return(consensusRanges)
 }
 
 extractSummits <- function(x,consensusRanges){
@@ -72,14 +72,14 @@ dropNonPrimary <- function(x,consensusRanges,id="mcols.ID",score="summitScores")
   mat <- as.matrix(findOverlaps(consensusRanges,x))
   tempConsensusRanges <- consensusRanges[mat[,1],]
   mcols(tempConsensusRanges) <- mcols(x[mat[,2]])[,c(id,score)]
-  tempConsensusRanges <- tempConsensusRanges[order(mcols(tempConsensusRanges)[,score],decreasing=TRUE),]  
+  tempConsensusRanges <- tempConsensusRanges[order(mcols(tempConsensusRanges)[,score],decreasing=TRUE),]
   primaryIDs <- mcols(tempConsensusRanges[match(unique(tempConsensusRanges[,id]),tempConsensusRanges[,id])])[,id]
   x <- x[mcols(x)[,id] %in% primaryIDs]
   return(x)
 }
 #' Returns summits and summmit scores after optional fragment length prediction and read extension
 #' @rdname findconsensusRegions
-#' @param peakfile GRanges of genomic intervals to summit. 
+#' @param peakfile GRanges of genomic intervals to summit.
 #' @param reads Character vector of bamFile location or GAlignments object
 #' @param readlength Read length of alignments.
 #' @return Summits A GRanges object of summits and summit scores.
@@ -87,7 +87,7 @@ dropNonPrimary <- function(x,consensusRanges,id="mcols.ID",score="summitScores")
 summitPipeline <- function(reads,peakfile,fragmentLength,readlength){
   message("Reading in peaks..",appendLF=FALSE)
   testRanges <- GetGRanges(peakfile)
-  message("done")  
+  message("done")
   if(class(reads) == "GAlignments"){
     message("Alignments loaded")
     ChrLengths <- seqlengths(reads)
@@ -96,13 +96,13 @@ summitPipeline <- function(reads,peakfile,fragmentLength,readlength){
     message("Reading in alignments..",appendLF=FALSE)
     ChrLengths <- scanBamHeader(reads)[[1]]$targets
     reads <- readGAlignmentsFromBam(reads)
-    message("done") 
+    message("done")
   }
   message("Calculating fragmentlength..",appendLF=FALSE)
   ccscores <- getShifts(reads,ChrLengths,shiftWindowStart=1,shiftWindowEnd=400)
   fragmentLength <- getFragmentLength(ccscores,readlength)
   message("done")
-  message("Extending reads..",appendLF=FALSE)  
+  message("Extending reads..",appendLF=FALSE)
   reads <- resize(as(reads,"GRanges"),fragmentLength,"start")
   message("done")
   message("Finding summit locations..",appendLF=FALSE)
@@ -115,11 +115,11 @@ summitPipeline <- function(reads,peakfile,fragmentLength,readlength){
 }
 
 runConsensusRegions <- function(testRanges,method="majority",overlap="any"){
-    if(class(testRanges) == "GRangesList" & length(testRanges) > 1){
-      
+    if((class(testRanges) == "GRangesList" | class(testRanges) == "CompressedGRangesList") & length(testRanges) > 1){
+
       reduced <- reduce(unlist(testRanges))
       consensusIDs <- paste0("consensus_",seq(1,length(reduced)))
-      mcols(reduced) <- 
+      mcols(reduced) <-
       do.call(cbind,lapply(testRanges,function(x)(reduced %over% x)+0))
       if(method=="majority"){
         reducedConsensus <- reduced[rowSums(as.data.frame(mcols(reduced))) > length(testRanges)/2,]
@@ -133,7 +133,9 @@ runConsensusRegions <- function(testRanges,method="majority",overlap="any"){
     consensusIDs <- paste0("consensus_",seq(1,length(reducedConsensus)))
     mcols(reducedConsensus) <- cbind(as.data.frame(mcols(reducedConsensus)),consensusIDs)
     return(reducedConsensus)
-    
+
+  }else {
+    stop("testRanges must be either of class GRangesList or of class CompressedGRangesList")
   }
 }
 runGetShifts <- function(reads,ChrLengths,ChrOfInterestshift,shiftWindowStart=1,shiftWindowEnd=400){
@@ -143,14 +145,14 @@ ChrLengths <- seqlengths(reads)
 PosCoverage <- coverage(IRanges(start(reads[strand(reads)=="+"]),start(reads[strand(reads)=="+"])),width=ChrLengths[names(ChrLengths) %in% ChrOfInterestshift])
 NegCoverage <- coverage(IRanges(end(reads[strand(reads)=="-"]),end(reads[strand(reads)=="-"])),width=ChrLengths[names(ChrLengths) %in% ChrOfInterestshift])
 message("Calculating shift for ",ChrOfInterestshift,"\n")
-ShiftsTemp <- shiftApply(seq(shiftWindowStart,shiftWindowEnd),PosCoverage,NegCoverage,RleSumAny, verbose = TRUE)         
+ShiftsTemp <- shiftApply(seq(shiftWindowStart,shiftWindowEnd),PosCoverage,NegCoverage,RleSumAny, verbose = TRUE)
 return(ShiftsTemp)
 }
 getShifts <- function(reads,ChrLengths,
                       shiftWindowStart=1,shiftWindowEnd=400){
   if(is.character(reads)){
     reads <- readGAlignmentsFromBam(reads)
-  }  
+  }
 shiftMat <- do.call(cbind,bplapply(names(ChrLengths),function(x)
 runGetShifts(reads[seqnames(reads) %in% x],ChrLengths,x,
           shiftWindowStart=1,shiftWindowEnd=400)))
@@ -161,9 +163,9 @@ return(cc_scores)
 getFragmentLength <- function(x,readLength){
   #peaks <- which(diff(sign(diff(x, na.pad = FALSE)), na.pad = FALSE) < 0)+1
   MaxShift <- which.max(runMean(x[-seq(1,(2*readLength))],10))+2*readLength
-  
+
 }
-  
+
 runFindSummit <- function(testRanges,reads,fragmentLength=NULL){
   if(is.character(reads)){
     reads <- readGAlignmentsFromBam(reads)
@@ -176,11 +178,11 @@ runFindSummit <- function(testRanges,reads,fragmentLength=NULL){
   test <- do.call(c,
                   bplapply(
     unique(seqnames(reads))[unique(seqnames(reads)) %in% unique(seqnames(testRanges))],
-    function(x) 
+    function(x)
     findCovMaxPos(reads[seqnames(testRanges) %in% x],testRanges[seqnames(testRanges) %in% x],seqlengths(reads)[names(seqlengths(reads)) %in% x],fragmentLength)
     )
   )
-  return(test)                                        
+  return(test)
 }
 
 getSummitScore <- function(reads,summits,fragmentLength=NULL,score="height"){
@@ -195,14 +197,14 @@ getSummitScore <- function(reads,summits,fragmentLength=NULL,score="height"){
   test <- do.call(c,
                   bplapply(
                     as.vector(unique(seqnames(reads))[unique(seqnames(reads)) %in% unique(seqnames(summits))]),
-                    function(x) 
+                    function(x)
                       runGetSummitScore(reads[seqnames(reads) %in% x],summits[seqnames(summits) %in% x],seqlengths(reads)[names(seqlengths(reads)) %in% x])
                   )
   )
-  return(test)                                         
+  return(test)
 }
 runGetSummitScore <- function(reads,summits,ChrOfInterestshift,FragmentLength=150,score="height"){
-    
+
 
   cov <- coverage(reads)
     if(score=="height"){
@@ -230,14 +232,14 @@ library(GenomicAlignments)
 
 #' Create GRangeslist from all combinations of GRanges
 #'
-#' @param testRanges A named list of GRanges or a named GRangesList 
+#' @param testRanges A named list of GRanges or a named GRangesList
 #' @return groupedGRanges A named GRangesList object.
-#' @examples 
+#' @examples
 #' data(ik_Example)
 #'  gts <- groupByOverlaps(ik_Example)
 #' @export
 groupByOverlaps <- function(testRanges){
-  
+
   testRanges <- GRangesList(
     lapply(
       testRanges,
@@ -246,17 +248,17 @@ groupByOverlaps <- function(testRanges){
   allRegionsReduced <- reduce(
     unlist(testRanges)
   )
-  
+
   overlapMat <- do.call(cbind,
                         lapply(1:length(testRanges),
                                function(x) ifelse((allRegionsReduced %over% testRanges[[x]]),names(testRanges)[x],""))
                         )
-  
+
   colnames(overlapMat) <- names(testRanges)
   mcols(allRegionsReduced)$grangesGroups <- as.factor(gsub("--|^-|-$","",
                                                  apply(overlapMat, 1 , paste , collapse = "-" )
                                                 ))
-  
+
   groupedGRangesList <- lapply(levels(allRegionsReduced$grangesGroups),
          function(x)allRegionsReduced[allRegionsReduced$grangesGroups %in% x])
   names(groupedGRangesList) <- levels(allRegionsReduced$grangesGroups)
@@ -265,13 +267,13 @@ groupByOverlaps <- function(testRanges){
 
 #' Set strand by overlapping or nearest anchor GRanges
 #' @rdname orientBy
-#' @param testRanges The GRanges object to anchor. 
-#' @param anchorRanges A GRanges object by which to anchor strand orientation. 
+#' @param testRanges The GRanges object to anchor.
+#' @param anchorRanges A GRanges object by which to anchor strand orientation.
 #' @return newRanges A GRanges object.
 #' @examples
 #' data(ik_Example)
 #' strand(ik_Example[[1]]) <- "+"
-#' anchoredGRanges <- orientBy(ik_Example[[2]],ik_Example[[1]]) 
+#' anchoredGRanges <- orientBy(ik_Example[[2]],ik_Example[[1]])
 #' @export
 orientBy <- function(testRanges,anchorRanges){
   distIndex <- distanceToNearest(testRanges,anchorRanges)
@@ -288,7 +290,7 @@ orientBy <- function(testRanges,anchorRanges){
 GetGRanges <- function(LoadFile,AllChr=NULL,ChrOfInterest=NULL,simple=FALSE,sepr="\t",simplify=FALSE){
   #    require(Rsamtools)
   #    require(GenomicRanges)
-  
+
   if(class(LoadFile) == "GRanges"){
     RegionRanges <- LoadFile
     if(simplify){
@@ -320,32 +322,32 @@ GetGRanges <- function(LoadFile,AllChr=NULL,ChrOfInterest=NULL,simple=FALSE,sepr
       }
     }
   }
-  if(!is.null(AllChr)){ 
-    RegionRanges <- RegionRanges[seqnames(RegionRanges) %in% AllChr]    
+  if(!is.null(AllChr)){
+    RegionRanges <- RegionRanges[seqnames(RegionRanges) %in% AllChr]
     seqlevels(RegionRanges,force=TRUE) <- AllChr
   }
-  if(!is.null(ChrOfInterest)){      
-    RegionRanges <- RegionRanges[seqnames(RegionRanges) == ChrOfInterest]      
+  if(!is.null(ChrOfInterest)){
+    RegionRanges <- RegionRanges[seqnames(RegionRanges) == ChrOfInterest]
   }
-  
+
   return(RegionRanges)
 }
 
 findCovMaxPos <- function(reads,bedRanges,ChrOfInterest,FragmentLength){
   #    require(GenomicRanges)
   #    require(Rsamtools)
-  
+
   cat("done\n")
   cat("Calculating coverage\n")
   MaxRanges <- GRanges()
   if(length(reads) > 0){
     seqlengths(reads)[names(ChrOfInterest)] <- ChrOfInterest
-    AllCov <- coverage(reads) 
+    AllCov <- coverage(reads)
     cat("Calculating Summits on ",names(ChrOfInterest)," ..")
     covPerPeak <- Views(AllCov[[which(names(AllCov) %in% names(ChrOfInterest))]],ranges(bedRanges[seqnames(bedRanges) == names(ChrOfInterest)]))
     meanSummitLocations <- viewApply(covPerPeak,function(x)round(mean(which(x==max(x)))))
     Maxes <- (start(bedRanges)+meanSummitLocations)-1
-    if(any(is.na(Maxes))){ 
+    if(any(is.na(Maxes))){
       NoSummitRanges <- bedRanges[is.na(Maxes)]
       Maxes[is.na(Maxes)]  <- (start((ranges(NoSummitRanges[seqnames(NoSummitRanges) == names(ChrOfInterest)])))+end((ranges(NoSummitRanges[seqnames(NoSummitRanges) == names(ChrOfInterest)]))))/2
     }
@@ -354,7 +356,7 @@ findCovMaxPos <- function(reads,bedRanges,ChrOfInterest,FragmentLength){
     #revAllCov <- runmean(revAllCov[names(revAllCov) %in% ChrOfInterest],20)
     #cat("Calculating reverse Summits on ",ChrOfInterest," ..")
     #revMaxes <- which.max(Views(revAllCov[[which(names(revAllCov) %in% ChrOfInterest)]],ranges(bedRanges[seqnames(bedRanges) == ChrOfInterest])))
-    #if(any(is.na(revMaxes))){ 
+    #if(any(is.na(revMaxes))){
     #  revNoSummitRanges <- bedRanges[is.na(revMaxes)]
     #  revMaxes[is.na(revMaxes)]  <- (start((ranges(revNoSummitRanges[seqnames(revNoSummitRanges) == ChrOfInterest])))+end((ranges(revNoSummitRanges[seqnames(revNoSummitRanges) == ChrOfInterest]))))/2
     #}
@@ -397,7 +399,7 @@ EndRule = function(x, y, k, dimx,
   # Function which postprocess results of running windows functions and cast
   # them in to specified format. On input y is equivalent to
   #   y = runFUNC(as.vector(x), k, endrule="func", align="center")
-  
+
   # === Step 1: inspects inputs and unify format ===
   align   = match.arg(align)
   k = as.integer(k)
@@ -412,7 +414,7 @@ EndRule = function(x, y, k, dimx,
   if (k>n) k2 = (n-1)%/%2
   k1 = k-k2-1
   if (align=="center" && k==2) align='right'
-  
+
   # === Step 2: Apply different endrules ===
   if (endrule=="trim") {
     y = y[(k1+1):(n-k2),] # change y dimensions
@@ -461,9 +463,8 @@ EndRule = function(x, y, k, dimx,
       for (j in 1:m) for (i in idx) y[i,j] = Func(x[1:i,j], ...)
     }
   }
-  
+
   # === Step 4: final casting and return results ===
   if (yIsVec) y = as.vector(y);
   return(y)
 }
-
